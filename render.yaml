@@ -1,0 +1,48 @@
+# Render Blueprint for the БОМБА БЕТ backend.
+#
+# Deploy: Render Dashboard → New → Blueprint → pick this repo. Render reads this
+# file, creates the web service and the PostgreSQL database, and links them.
+#
+# The single most important line is `rootDir: backend`. The backend is a
+# subdirectory of the repo, so without it Render runs npm in the repo root and
+# fails with ENOENT .../src/package.json.
+
+services:
+  - type: web
+    name: bombabet-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    # NODE_ENV=production makes `npm ci` skip devDependencies, but the build
+    # needs TypeScript. --include=dev forces the compiler in.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bombabet-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: owner
+      # Render prompts you for this at deploy time. Must be >= 12 characters.
+      # It is only used on the very first boot to create the admin account; the
+      # app forces a password change on first login.
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+
+databases:
+  - name: bombabet-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"

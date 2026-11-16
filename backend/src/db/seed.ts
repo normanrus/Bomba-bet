@@ -14,7 +14,7 @@ import { logger } from '../utils/logger';
  *  - The account is flagged `must_change_password`, so the first login forces a reset.
  *  - Re-running the seed never overwrites an existing admin's password.
  */
-async function seedAdmin(): Promise<void> {
+export async function seedAdmin(): Promise<void> {
   const username = config.adminUsername;
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE username_lower = $1 AND role = $2',
@@ -68,13 +68,17 @@ async function main() {
   }
 }
 
-main()
-  .then(() => pool.end())
-  .then(() => {
-    logger.info('seed complete');
-    process.exit(0);
-  })
-  .catch((err) => {
-    logger.error({ err }, 'seed failed');
-    process.exit(1);
-  });
+// Only run as a CLI. Importing `seedAdmin` (e.g. from the server bootstrap) must
+// not trigger a seed run or close the pool.
+if (require.main === module) {
+  main()
+    .then(() => pool.end())
+    .then(() => {
+      logger.info('seed complete');
+      process.exit(0);
+    })
+    .catch((err) => {
+      logger.error({ err }, 'seed failed');
+      process.exit(1);
+    });
+}

@@ -49,6 +49,7 @@ gradle :app:assembleRelease -PapiBaseUrl=https://<ваш-домен>
 ## Документация
 
 * `docs/DEPLOYMENT.md` — запуск сервера, переменные окружения, бэкапы, обновления.
+* `docs/DEPLOY_RENDER.md` — деплой backend на Render (Web Service + PostgreSQL).
 * `docs/BUILD_APK.md` — установка Android SDK и сборка APK.
 
 ## Возможности
