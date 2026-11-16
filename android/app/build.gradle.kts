@@ -16,8 +16,11 @@ android {
         versionName = "1.0.0"
 
         // Point this at your deployed API. 10.0.2.2 is the host machine as seen
-        // from the Android emulator.
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:4000\"")
+        // from the Android emulator. Override at build time with:
+        //   gradle assembleRelease -PapiBaseUrl=https://your-host.example.com
+        val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?)
+            ?: "http://10.0.2.2:4000"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     buildTypes {

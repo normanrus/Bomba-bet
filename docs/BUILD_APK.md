@@ -25,16 +25,31 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
 
 ## 2. Указать адрес сервера
 
-Откройте `android/app/build.gradle.kts` и задайте `API_BASE_URL`:
+Адрес API задаётся на этапе сборки через свойство Gradle `apiBaseUrl`
+(по умолчанию `http://10.0.2.2:4000` — хост-машина для эмулятора):
+
+```bash
+# Публичный сервер (например, за HTTPS-прокси)
+gradle :app:assembleRelease -PapiBaseUrl=https://bomba.example.com
+
+# Реальный телефон в той же Wi-Fi сети, что и сервер
+gradle :app:assembleDebug -PapiBaseUrl=http://192.168.1.50:4000
+
+# Эмулятор (значение по умолчанию)
+gradle :app:assembleDebug
+```
+
+Либо отредактируйте значение по умолчанию в `android/app/build.gradle.kts`:
 
 ```kotlin
 defaultConfig {
-    // Эмулятор: 10.0.2.2 — это хост-машина.
-    buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:4000\"")
-    // Реальный телефон в той же сети:
-    // buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.50:4000\"")
+    val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?)
+        ?: "http://10.0.2.2:4000"
+    buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 }
 ```
+
+Адрес без завершающего слэша; путь `/api/...` добавляется автоматически.
 
 ## 3. Сборка
 
@@ -44,11 +59,11 @@ export ANDROID_HOME=/opt/android-sdk
 export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
 
 # Отладочная сборка (быстрая, для проверки)
-gradle :app:assembleDebug
+gradle :app:assembleDebug -PapiBaseUrl=https://bomba.example.com
 # → app/build/outputs/apk/debug/app-debug.apk
 
 # Релизная сборка (минификация R8, уменьшенный размер)
-gradle :app:assembleRelease
+gradle :app:assembleRelease -PapiBaseUrl=https://bomba.example.com
 # → app/build/outputs/apk/release/app-release.apk
 ```
 
@@ -56,6 +71,9 @@ gradle :app:assembleRelease
 
 * `android/app/build/outputs/apk/debug/app-debug.apk`
 * `android/app/build/outputs/apk/release/app-release.apk`
+
+При запуске через Docker Compose собранные APK раздаются по адресу
+`https://<ваш-хост>/download/` (release и debug).
 
 ## 4. Установка на телефон
 

@@ -28,9 +28,23 @@ docker compose logs api | grep -A4 "начальный администрато�
 
 * API — http://localhost:4000/api/health
 * Админ-панель — http://localhost:8080
+* Скачать APK — http://localhost:8080/download/release/app-release.apk
 
 Миграции и создание администратора выполняются автоматически при старте.
 Подробности — в `docs/DEPLOYMENT.md`.
+
+### Онлайн-режим
+
+Приложение работает через интернет: наружу достаточно опубликовать один адрес
+(контейнер `admin`), потому что его nginx уже проксирует API на том же origin.
+Соберите APK с этим публичным адресом:
+
+```bash
+cd android
+gradle :app:assembleRelease -PapiBaseUrl=https://<ваш-домен>
+```
+
+Готовый APK будет доступен по `https://<ваш-домен>/download/release/app-release.apk`.
 
 ## Документация
 

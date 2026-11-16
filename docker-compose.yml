@@ -61,6 +61,9 @@ services:
         condition: service_healthy
     ports:
       - "${ADMIN_PORT:-8080}:80"
+    volumes:
+      # APKs land here and are downloadable at /download/.
+      - ./android/app/build/outputs/apk:/usr/share/nginx/apk:ro
     networks: [bombabet]
 
   backup:
