@@ -1,0 +1,40 @@
+{
+  "events": [
+    {
+      "id": "e-1",
+      "sport": "football",
+      "league": "Любительская лига",
+      "teamHome": "Заря",
+      "teamAway": "Восход",
+      "startsAt": "2026-12-01T18:00:00.000Z",
+      "status": "upcoming",
+      "homeScore": null,
+      "awayScore": null,
+      "markets": [
+        {
+          "id": "m-1",
+          "title": "Исход матча",
+          "kind": "outcome",
+          "isActive": true,
+          "outcomes": [
+            { "id": "o-1", "code": "home", "label": "Победа 1", "odds": 2.1, "isActive": true },
+            { "id": "o-2", "code": "draw", "label": "Ничья", "odds": 3.2, "isActive": true },
+            { "id": "o-3", "code": "away", "label": "Победа 2", "odds": 2.9, "isActive": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e-2",
+      "sport": "hockey",
+      "league": "Ночная лига",
+      "teamHome": "Метеор",
+      "teamAway": "Комета",
+      "startsAt": "2026-11-20T19:30:00.000Z",
+      "status": "finished",
+      "homeScore": 3,
+      "awayScore": 1,
+      "markets": []
+    }
+  ]
+}

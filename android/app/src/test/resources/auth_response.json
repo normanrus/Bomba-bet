@@ -1,0 +1,15 @@
+{
+  "user": {
+    "id": "u-1",
+    "username": "игрок",
+    "avatarSeed": "abc",
+    "balance": 1000,
+    "role": "user",
+    "status": "active",
+    "telegramUsername": null,
+    "createdAt": "2026-01-01T10:00:00.000Z"
+  },
+  "accessToken": "access-1",
+  "refreshToken": "refresh-1",
+  "mustChangePassword": false
+}
