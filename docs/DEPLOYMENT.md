@@ -217,3 +217,16 @@ docker compose restart api      # применит новые миграции �
   укажите в `CORS_ORIGIN` домен админки.
 
 Сборка APK описана в `docs/BUILD_APK.md`.
+
+---
+
+## 9. Развёртывание на Render
+
+Backend можно развернуть на Render как Web Service + PostgreSQL. Ключевой
+момент: backend лежит в подпапке `backend/`, поэтому в Render обязательно
+нужно указать **Root Directory = `backend`**, иначе сборка падает с
+`ENOENT ... /src/package.json`.
+
+Готовый blueprint — в корне репозитория (`render.yaml`). Пошаговая инструкция,
+настройки сервиса, переменные окружения, подключение базы, публичный URL и
+замена `localhost` в Android-приложении — в `docs/DEPLOY_RENDER.md`.

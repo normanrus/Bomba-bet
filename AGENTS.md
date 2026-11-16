@@ -18,7 +18,7 @@ flows, deposits, or payment integrations.
 - `android/` — Kotlin + Jetpack Compose app.
 - `docker/` — entrypoint script and backup directory.
 - `docker-compose.yml` — db + api + admin + backup stack.
-- `docs/` — `DEPLOYMENT.md`, `BUILD_APK.md`.
+- `docs/` — `DEPLOYMENT.md`, `DEPLOY_RENDER.md`, `BUILD_APK.md`.
 
 ## Build and test commands
 
@@ -27,9 +27,13 @@ Backend (from `backend/`):
 - `npm test` — vitest unit tests (`src/__tests__/unit.test.ts`).
 - `npm run typecheck` — `tsc --noEmit` over everything, including tests.
 - `npm run build` — compiles with `tsconfig.build.json` (excludes tests from `dist`).
-- `ADMIN_PASSWORD='<pw>' bash scripts/e2e.sh` — 47-check end-to-end suite
+- `ADMIN_PASSWORD='<pw>' bash scripts/e2e.sh` — 52-check end-to-end suite
   against a running server.
-- Migrations run automatically on API startup (`src/db/migrate.ts`).
+- Migrations run automatically on API startup (`src/db/migrate.ts`). Startup
+  also ensures default settings and the bootstrap admin (`seedAdmin`), so
+  `npm start` is self-contained; all three steps are idempotent.
+- `npm run migrate:prod` / `npm run seed:prod` run the compiled `dist/` versions
+  (no `tsx`), which is what a production host uses.
 
 Android (from `android/`, needs `ANDROID_HOME` set to the SDK):
 
@@ -69,5 +73,15 @@ Full stack:
 - The daily bonus counts failed rolls (`kind IN ('daily','daily_attempt')`) so
   the published "once per day" rule cannot be bypassed by spamming requests.
 - Do not commit `.env`; it holds real secrets. Use `.env.example` as the template.
+- Render deploy gotchas (see `docs/DEPLOY_RENDER.md`, `render.yaml`):
+  `package.json` lives in `backend/`, so the Render service needs
+  **Root Directory = `backend`** or the build fails with
+  `ENOENT .../src/package.json`. Render sets `NODE_ENV=production`, which makes
+  `npm ci` skip devDependencies, so the build command must be
+  `npm ci --include=dev && npm run build` (otherwise `tsc: not found`).
+  In production, missing `DATABASE_URL`/`JWT_SECRET` throws at boot on purpose.
+- Server binds `config.host` (`HOST`, default `0.0.0.0`); startup retries the DB
+  `DB_READY_ATTEMPTS` (30) times every `DB_READY_DELAY_MS` (2000ms) so a managed
+  database that is still booting does not crash-loop the service.
 - UI language is Russian. Theme: dark graphite (`#0A0A0C`/`#121216`) with red
   (`#FF3B30`) and orange (`#FF7A18`) accents.
