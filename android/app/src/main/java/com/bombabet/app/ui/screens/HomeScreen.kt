@@ -234,6 +234,12 @@ private fun BalanceCard(user: User?, config: AppConfig) {
                 Spacer(Modifier.width(8.dp))
                 Text("очков", color = BbColors.Muted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
             }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Выводимо в призы: ${Format.points(user?.withdrawableBalance ?: 0.0)} очк",
+                color = BbColors.Accent2,
+                fontSize = 11.sp,
+            )
 
             Spacer(Modifier.height(14.dp))
             Row(
@@ -245,7 +251,7 @@ private fun BalanceCard(user: User?, config: AppConfig) {
             ) {
                 InfoBit("Мин. ставка", Format.points(config.predictions.minStake), Modifier.weight(1f))
                 InfoBit("Макс. ставка", Format.points(config.predictions.maxStake), Modifier.weight(1f))
-                InfoBit("Мин. приз", Format.points(config.prizes.minRequest), Modifier.weight(1f))
+                InfoBit("Мин. приз", "${config.prizes.minStars} ⭐", Modifier.weight(1f))
             }
         }
     }
@@ -448,7 +454,7 @@ private fun ContestCard(rules: PrizeRules, onGoToPrizes: () -> Unit) {
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
-                    Format.points(rules.remaining) + " очк.",
+                    "${Format.points(rules.remaining)} ⭐",
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -464,9 +470,9 @@ private fun ContestCard(rules: PrizeRules, onGoToPrizes: () -> Unit) {
                 .background(BbColors.Bg.copy(alpha = 0.5f))
                 .padding(12.dp),
         ) {
-            InfoBit("Всего фонд", Format.points(rules.maxFund), Modifier.weight(1f))
-            InfoBit("Мин. заявка", Format.points(rules.minRequest), Modifier.weight(1f))
-            InfoBit("Использовано", Format.points(rules.used), Modifier.weight(1f))
+            InfoBit("Всего фонд", "${rules.maxStars} ⭐", Modifier.weight(1f))
+            InfoBit("Мин. заявка", "${rules.minStars} ⭐", Modifier.weight(1f))
+            InfoBit("Использовано", "${Format.points(rules.used)} ⭐", Modifier.weight(1f))
         }
 
         if (rules.rulesText.isNotBlank()) {

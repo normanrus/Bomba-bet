@@ -37,7 +37,7 @@ router.get(
     }
     params.push(limit, offset);
     const rows = await many(
-      `SELECT pr.*, u.username, u.id AS uid, u.balance, u.telegram_username,
+      `SELECT pr.*, u.username, u.id AS uid, u.balance, u.withdrawable_balance, u.telegram_username,
               (SELECT count(*) FROM predictions p WHERE p.user_id = u.id AND p.status = 'won')       AS wins,
               (SELECT COALESCE(sum(p.payout), 0) FROM predictions p WHERE p.user_id = u.id AND p.status = 'won') AS total_won
          FROM prize_requests pr
@@ -54,6 +54,7 @@ router.get(
         username: r.username,
         userId: r.uid,
         userBalance: Number(r.balance),
+        userWithdrawable: Number(r.withdrawable_balance),
         userTelegram: r.telegram_username,
         userWins: Number(r.wins),
         userTotalWon: Number(r.total_won),

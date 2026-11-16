@@ -4,6 +4,7 @@ export interface AdminUser {
   avatarSeed: string;
   avatarUrl: string | null;
   balance: number;
+  withdrawableBalance: number;
   role: string;
   status: 'active' | 'blocked';
   telegramUsername: string | null;
@@ -84,6 +85,7 @@ export interface Prize {
   userId: string;
   username?: string;
   amount: number;
+  stars: number;
   telegramUsername: string;
   status: 'pending' | 'approved' | 'issued' | 'rejected' | 'cancelled';
   userNote: string | null;
@@ -92,6 +94,7 @@ export interface Prize {
   requestedAt: string;
   processedAt: string | null;
   userBalance?: number;
+  userWithdrawable?: number;
   userTelegram?: string | null;
   userWins?: number;
   userTotalWon?: number;
@@ -124,6 +127,7 @@ export interface LedgerEntry {
   id: number;
   delta: number;
   balanceAfter: number;
+  withdrawableAfter: number;
   reason: string;
   note: string | null;
   createdAt: string;
@@ -162,8 +166,9 @@ export interface Settings {
   'bonuses.dailyMax': number;
   'bonuses.rulesText': string;
   'prizes.enabled': boolean;
-  'prizes.maxFund': number;
-  'prizes.minRequest': number;
+  'prizes.maxStars': number;
+  'prizes.minStars': number;
+  'prizes.pointsPerStar': number;
   'prizes.rulesText': string;
   'maintenance.enabled': boolean;
   'maintenance.message': string;

@@ -41,8 +41,8 @@ export function DashboardPage() {
         />
         <Stat
           label="Призовой фонд"
-          value={`${fmt.num(stats.prizeFund.used)} / ${fmt.num(stats.prizeFund.limit)}`}
-          hint={`Выдано: ${fmt.num(stats.prizeFund.issued)}`}
+          value={`${fmt.num(stats.prizeFund.used)} / ${fmt.num(stats.prizeFund.limit)} ⭐`}
+          hint={`Выдано: ${fmt.num(stats.prizeFund.issued)} ⭐`}
         />
       </div>
 

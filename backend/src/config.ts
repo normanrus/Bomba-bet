@@ -22,7 +22,7 @@ export const config = {
   jwtSecret: req('JWT_SECRET', 'dev_only_change_me_please_32_chars_min'),
   accessTtlSec: Number(process.env.JWT_ACCESS_TTL ?? 900),
   refreshTtlDays: Number(process.env.JWT_REFRESH_TTL_DAYS ?? 30),
-  signupBonus: Number(process.env.SIGNUP_BONUS ?? 1000),
+  signupBonus: Number(process.env.SIGNUP_BONUS ?? 500),
   adminUsername: process.env.ADMIN_USERNAME ?? 'owner',
   adminPassword: process.env.ADMIN_PASSWORD ?? '',
 } as const;

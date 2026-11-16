@@ -64,8 +64,8 @@ export function PrizesPage() {
         <div>
           <h1>Призы</h1>
           <div className="sub">
-            Выдача вручную в Telegram Stars · зарезервировано {fmt.num(fund.used)} · выдано{' '}
-            {fmt.num(fund.issued)}
+            Выдача вручную в Telegram Stars · зарезервировано {fmt.num(fund.used)} ⭐ · выдано{' '}
+            {fmt.num(fund.issued)} ⭐
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function PrizesPage() {
                 <th>Дата</th>
                 <th>Игрок</th>
                 <th>Telegram</th>
-                <th>Сумма</th>
+                <th>Приз</th>
                 <th>Выигрышей</th>
                 <th>Статус</th>
                 <th>Комментарий</th>
@@ -119,10 +119,12 @@ export function PrizesPage() {
                   </td>
                   <td className="mono">@{p.telegramUsername}</td>
                   <td>
-                    <b>{fmt.num(p.amount)}</b>
+                    <b>{fmt.num(p.stars)} ⭐</b>
+                    <div className="sub">{fmt.num(p.amount)} очк</div>
                   </td>
                   <td className="sub">
                     {p.userWins ?? 0} шт · {fmt.num(p.userTotalWon ?? 0)} очк
+                    <div className="sub">выводимо: {fmt.num(p.userWithdrawable ?? 0)}</div>
                   </td>
                   <td>
                     <Badge status={p.status} />
@@ -201,9 +203,9 @@ function ActionModal({
         </dd>
         <dt>ID</dt>
         <dd className="mono">{prize.userId}</dd>
-        <dt>Сумма</dt>
+        <dt>Приз</dt>
         <dd>
-          <b>{fmt.num(prize.amount)}</b> очков
+          <b>{fmt.num(prize.stars)} ⭐</b> ({fmt.num(prize.amount)} очков)
         </dd>
         <dt>Telegram</dt>
         <dd className="mono">@{prize.telegramUsername}</dd>
@@ -211,7 +213,7 @@ function ActionModal({
 
       {kind === 'reject' ? (
         <div className="alert alert-info">
-          Очки будут возвращены на баланс игрока. Причина обязательна и будет видна пользователю.
+          Выводимые очки вернутся на баланс игрока. Причина обязательна и будет видна пользователю.
         </div>
       ) : (
         <div className="alert alert-info">

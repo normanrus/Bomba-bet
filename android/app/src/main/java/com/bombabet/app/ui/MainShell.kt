@@ -198,8 +198,8 @@ fun MainShell(
                         error = prizes.error,
                         busy = busy,
                         onRetry = { viewModel.loadPrizes() },
-                        onSubmit = { amount, telegram, note ->
-                            viewModel.requestPrize(amount, telegram, note) { _, message ->
+                        onSubmit = { stars, telegram, note ->
+                            viewModel.requestPrize(stars, telegram, note) { _, message ->
                                 appViewModel.showToast(message)
                             }
                         },

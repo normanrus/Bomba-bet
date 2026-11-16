@@ -62,13 +62,23 @@ export function UsersPage() {
     if (!Number.isInteger(delta) || delta === 0) return push('Нужно целое число, отличное от нуля', 'err');
     const reason = window.prompt('Причина корректировки (обязательно):');
     if (!reason || reason.trim().length < 3) return push('Укажите причину (минимум 3 символа)', 'err');
+    // A credit can be made cashable; debits always drain free points first.
+    const withdrawable =
+      delta > 0
+        ? window.confirm(
+            'Сделать начисление выводимым (можно будет обменять на приз)?\nOK — выводимые, Отмена — обычные бонусные.',
+          )
+        : false;
     try {
       setBusy(true);
       const res = await apiPost<{ balanceBefore: number; balanceAfter: number }>(
         `/admin/users/${u.id}/balance`,
-        { delta, reason: reason.trim() },
+        { delta, reason: reason.trim(), withdrawable },
       );
-      push(`Баланс: ${fmt.num(res.balanceBefore)} → ${fmt.num(res.balanceAfter)}`);
+      push(
+        `Баланс: ${fmt.num(res.balanceBefore)} → ${fmt.num(res.balanceAfter)}` +
+          (delta > 0 ? (withdrawable ? ' (выводимые)' : ' (бонусные)') : ''),
+      );
       await load();
       if (detail?.user.id === u.id) await openDetail(u.id);
     } catch (e) {
@@ -137,6 +147,7 @@ export function UsersPage() {
                   <td className="mono">{u.id.slice(0, 8)}…</td>
                   <td>
                     <b>{fmt.num(u.balance)}</b>
+                    <div className="sub">выводимо: {fmt.num(u.withdrawableBalance)}</div>
                   </td>
                   <td>
                     <span style={{ color: 'var(--ok)' }}>{u.wins}</span> /{' '}
@@ -183,6 +194,11 @@ export function UsersPage() {
             <dt>Баланс</dt>
             <dd>
               <b>{fmt.num(detail.user.balance)}</b> очков
+            </dd>
+            <dt>Выводимые</dt>
+            <dd>
+              <b>{fmt.num(detail.user.withdrawableBalance)}</b> очков{' '}
+              <span className="sub">(можно обменять на приз)</span>
             </dd>
             <dt>Статус</dt>
             <dd>
@@ -253,6 +269,7 @@ export function UsersPage() {
                     <th>Операция</th>
                     <th>Изменение</th>
                     <th>Баланс</th>
+                    <th>Выводимо</th>
                     <th>Комментарий</th>
                   </tr>
                 </thead>
@@ -266,6 +283,7 @@ export function UsersPage() {
                         {fmt.num(l.delta)}
                       </td>
                       <td>{fmt.num(l.balanceAfter)}</td>
+                      <td>{fmt.num(l.withdrawableAfter)}</td>
                       <td className="sub">{l.note ?? '—'}</td>
                     </tr>
                   ))}
@@ -283,7 +301,7 @@ export function UsersPage() {
                 <thead>
                   <tr>
                     <th>Дата</th>
-                    <th>Сумма</th>
+                    <th>Приз</th>
                     <th>Telegram</th>
                     <th>Статус</th>
                   </tr>
@@ -292,7 +310,10 @@ export function UsersPage() {
                   {detail.prizes.map((p) => (
                     <tr key={p.id}>
                       <td className="mono">{fmt.dt(p.requestedAt)}</td>
-                      <td>{fmt.num(p.amount)}</td>
+                      <td>
+                        <b>{fmt.num(p.stars)} ⭐</b>
+                        <div className="sub">{fmt.num(p.amount)} очк</div>
+                      </td>
                       <td className="mono">@{p.telegramUsername}</td>
                       <td>
                         <Badge status={p.status} />

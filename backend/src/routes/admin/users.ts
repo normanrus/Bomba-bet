@@ -45,7 +45,7 @@ router.get(
     params.push(limit, offset);
 
     const rows = await many(
-      `SELECT u.id, u.username, u.avatar_seed, u.avatar_url, u.balance, u.role, u.status,
+      `SELECT u.id, u.username, u.avatar_seed, u.avatar_url, u.balance, u.withdrawable_balance, u.role, u.status,
               u.telegram_username, u.created_at, u.last_seen_at,
               count(p.id) FILTER (WHERE p.status = 'won')     AS wins,
               count(p.id) FILTER (WHERE p.status = 'lost')    AS losses,
@@ -81,7 +81,7 @@ router.get(
   '/:id',
   asyncHandler(async (req, res) => {
     const user = await one<Record<string, unknown>>(
-      `SELECT id, username, avatar_seed, avatar_url, balance, role, status,
+      `SELECT id, username, avatar_seed, avatar_url, balance, withdrawable_balance, role, status,
               telegram_username, created_at, last_seen_at
          FROM users WHERE id = $1`,
       [req.params.id],
@@ -93,7 +93,7 @@ router.get(
       [req.params.id],
     );
     const ledger = await many(
-      `SELECT id, delta, balance_after, reason, note, ref_type, ref_id, created_at
+      `SELECT id, delta, balance_after, withdrawable_after, reason, note, ref_type, ref_id, created_at
          FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
       [req.params.id],
     );
@@ -108,6 +108,7 @@ router.get(
         id: Number(l.id),
         delta: Number(l.delta),
         balanceAfter: Number(l.balance_after),
+        withdrawableAfter: Number(l.withdrawable_after),
         reason: l.reason,
         note: l.note,
         createdAt: l.created_at,
@@ -162,10 +163,14 @@ router.post(
     z.object({
       delta: z.coerce.number().int().refine((v) => v !== 0, 'Изменение не может быть нулевым'),
       reason: z.string().trim().min(3, 'Укажите причину').max(300),
+      // A credit can be marked withdrawable; a debit always follows the normal
+      // bonus-first policy so it never drains cashable points silently.
+      withdrawable: z.boolean().optional().default(false),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { delta, reason } = req.body;
+    const { delta, reason, withdrawable } = req.body;
+    const creditWithdrawable = delta > 0 && withdrawable;
     const result = await withTransaction(async (client) => {
       const target = await client.query('SELECT id FROM users WHERE id = $1', [req.params.id]);
       if (target.rowCount === 0) throw notFound('Пользователь не найден');
@@ -177,6 +182,8 @@ router.post(
         refId: req.user!.id,
         note: reason,
         actorId: req.user!.id,
+        // Only a positive adjustment may be credited as cashable.
+        withdrawableDelta: creditWithdrawable ? delta : undefined,
       });
       await audit(
         {
@@ -188,8 +195,11 @@ router.post(
           details: {
             delta,
             reason,
+            withdrawable: creditWithdrawable,
             balanceBefore: change.balanceBefore,
             balanceAfter: change.balanceAfter,
+            withdrawableBefore: change.withdrawableBefore,
+            withdrawableAfter: change.withdrawableAfter,
           },
           ip: req.ip ?? null,
         },

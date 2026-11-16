@@ -30,13 +30,15 @@ router.get(
       },
       prizes: {
         enabled: s['prizes.enabled'],
-        minRequest: s['prizes.minRequest'],
-        maxFund: s['prizes.maxFund'],
+        minStars: s['prizes.minStars'],
+        maxStars: s['prizes.maxStars'],
+        pointsPerStar: s['prizes.pointsPerStar'],
         rulesText: s['prizes.rulesText'],
       },
       disclaimer:
         'БОМБА БЕТ — бесплатная игра для друзей. Очки виртуальные, депозиты и платные ставки отсутствуют. ' +
-        'Призы выдаются вручную администратором в Telegram Stars.',
+        'Призы выдаются вручную администратором в Telegram Stars. Принимаются только выводимые очки ' +
+        '(выигранные в прогнозах) — бесплатные бонусные очки вывести нельзя.',
     });
   }),
 );

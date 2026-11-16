@@ -163,7 +163,7 @@ export async function seedDemoData(): Promise<void> {
     await withTransaction((client) =>
       applyBalanceChange(client, {
         userId: row.rows[0].id,
-        delta: 5000,
+        delta: 500,
         reason: 'signup_bonus',
         note: 'Демо-баланс',
       }),

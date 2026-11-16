@@ -179,10 +179,10 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun requestPrize(amount: Int, telegram: String, note: String?, onDone: (ok: Boolean, message: String) -> Unit) {
+    fun requestPrize(stars: Int, telegram: String, note: String?, onDone: (ok: Boolean, message: String) -> Unit) {
         _busy.value = true
         viewModelScope.launch {
-            val res = repo.requestPrize(amount, telegram, note)
+            val res = repo.requestPrize(stars, telegram, note)
             _busy.value = false
             when (res) {
                 is ApiResult.Ok -> {

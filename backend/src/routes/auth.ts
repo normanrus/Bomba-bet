@@ -81,7 +81,7 @@ router.post(
       const ins = await client.query(
         `INSERT INTO users (username, username_lower, password_hash, telegram_username, avatar_seed, balance)
          VALUES ($1, $2, $3, $4, $5, 0)
-         RETURNING id, username, avatar_seed, avatar_url, balance, role, status, telegram_username, created_at`,
+         RETURNING id, username, avatar_seed, avatar_url, balance, withdrawable_balance, role, status, telegram_username, created_at`,
         [
           username,
           username.toLowerCase(),
@@ -142,11 +142,12 @@ router.post(
       avatar_seed: string;
       avatar_url: string | null;
       balance: string;
+      withdrawable_balance: string;
       telegram_username: string | null;
       created_at: string;
     }>(
       `SELECT id, username, password_hash, role, status, must_change_password,
-              avatar_seed, avatar_url, balance, telegram_username, created_at
+              avatar_seed, avatar_url, balance, withdrawable_balance, telegram_username, created_at
          FROM users WHERE username_lower = $1`,
       [username.toLowerCase()],
     );

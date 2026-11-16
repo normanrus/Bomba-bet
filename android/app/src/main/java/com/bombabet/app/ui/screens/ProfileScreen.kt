@@ -263,6 +263,11 @@ private fun ProfileHeaderCard(user: User?) {
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                     )
+                    Text(
+                        "выводимо: ${Format.points(user?.withdrawableBalance ?: 0.0)}",
+                        color = BbColors.Muted,
+                        fontSize = 11.sp,
+                    )
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -303,7 +308,7 @@ private fun LedgerRow(entry: LedgerEntry) {
                     fontWeight = FontWeight.Black,
                 )
                 Text(
-                    "баланс ${Format.points(entry.balanceAfter)}",
+                    "баланс ${Format.points(entry.balanceAfter)} · выводимо ${Format.points(entry.withdrawableAfter)}",
                     color = BbColors.Muted,
                     fontSize = 10.sp,
                 )

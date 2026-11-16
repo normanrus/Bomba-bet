@@ -51,6 +51,17 @@ Full stack:
 
 ## Conventions and gotchas
 
+- Points come in two buckets on every user: `balance` (total) and
+  `withdrawable_balance` (cashable). Only points *won* in predictions are
+  cashable; signup/daily bonuses and admin gifts are not. `src/services/economy.ts`
+  owns the split (`resolveSplit`) and is unit-tested — change it there, not in
+  the routes.
+- Prize requests are denominated in Telegram Stars (`stars`), converted at
+  `prizes.pointsPerStar` (default 100). The fund is capped at `prizes.maxStars`
+  (default 125 ⭐).
+- `backend/scripts/reset-test-data.sql` is a one-time launch wipe: it deletes
+  every event and non-admin account and resets the point scale. Do not run it
+  after real friends have registered.
 - API responses wrap payloads (e.g. settings come back as `{settings: {...}}`
   with dotted keys). Prize reject uses the `rejectReason` field.
 - `GET /api/prizes/rules` is intentionally public: it is registered before the

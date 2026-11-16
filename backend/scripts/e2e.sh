@@ -39,13 +39,28 @@ json() { # method url token-or-empty body
 echo "== public config =="
 check "appName" "БОМБА БЕТ" "$(curl -sS "$BASE/config" | j appName)"
 
+# The prediction flow below needs at least one upcoming event with two markets.
+# On a clean production database there are none, so create one via the admin API.
+ADMIN_PASS="${ADMIN_PASSWORD:-}"
+ATOKEN=""
+if [ -n "$ADMIN_PASS" ]; then
+  ATOKEN=$(json POST "$BASE/auth/login" "" "{\"username\":\"owner\",\"password\":\"$ADMIN_PASS\"}" | j accessToken)
+fi
+if [ -z "$(curl -sS "$BASE/events?status=upcoming" | j events.0.id)" ]; then
+  if [ -z "$ATOKEN" ]; then
+    echo "  FAIL no upcoming event and ADMIN_PASSWORD unset — cannot bootstrap one" >&2
+    exit 1
+  fi
+  json POST "$BASE/admin/events" "$ATOKEN" '{"sport":"football","league":"Тест-лига","teamHome":"Тест А","teamAway":"Тест Б","startsAt":"2027-01-01T18:00:00.000Z","markets":[{"title":"Исход","kind":"outcome","outcomes":[{"label":"П1","odds":1.9},{"label":"П2","odds":2.1}]},{"title":"Тотал","kind":"total","outcomes":[{"label":"Больше 2.5","odds":1.85},{"label":"Меньше 2.5","odds":1.95}]}]}' > /dev/null
+fi
+
 echo "== register =="
 U="tester_$RANDOM$RANDOM"
 REG=$(json POST "$BASE/auth/register" "" "{\"username\":\"$U\",\"password\":\"SuperSecret123\",\"telegramUsername\":\"tester_tg\"}")
 TOKEN=$(echo "$REG" | j accessToken)
 AUTH="Authorization: Bearer $TOKEN"
 check "register returns token" "yes" "$([ -n "$TOKEN" ] && echo yes || echo no)"
-check "signup bonus credited" "1000" "$(echo "$REG" | j user.balance)"
+check "signup bonus credited" "500" "$(echo "$REG" | j user.balance)"
 check "id present" "yes" "$(echo "$REG" | j user.id | grep -qE '^[0-9a-f-]{36}$' && echo yes || echo no)"
 
 echo "== duplicate username rejected =="
@@ -76,12 +91,12 @@ echo "== place prediction =="
 KEY="idem-$RANDOM$RANDOM"
 BET=$(json POST "$BASE/predictions" "$TOKEN" "{\"eventId\":\"$EID\",\"marketId\":\"$MID\",\"outcomeId\":\"$OID\",\"stake\":100,\"idempotencyKey\":\"$KEY\"}")
 check "prediction created" "pending" "$(echo "$BET" | j prediction.status)"
-check "balance after stake" "900" "$(echo "$BET" | j balance)"
+check "balance after stake" "400" "$(echo "$BET" | j balance)"
 
 echo "== idempotent retry =="
 BET2=$(json POST "$BASE/predictions" "$TOKEN" "{\"eventId\":\"$EID\",\"marketId\":\"$MID\",\"outcomeId\":\"$OID\",\"stake\":100,\"idempotencyKey\":\"$KEY\"}")
 check "idempotent replay" "true" "$(echo "$BET2" | j idempotentReplay)"
-check "balance unchanged on replay" "900" "$(echo "$BET2" | j balance)"
+check "balance unchanged on replay" "400" "$(echo "$BET2" | j balance)"
 
 echo "== second pick on same market rejected =="
 check "conflicting pick -> 409" "409" "$(code POST "$BASE/predictions" -H "$AUTH" -H 'content-type: application/json' -d "{\"eventId\":\"$EID\",\"marketId\":\"$MID\",\"outcomeId\":\"$OID2\",\"stake\":50}")"
@@ -114,25 +129,40 @@ else
 
   echo "== admin settles the event (winner = our pick) =="
   SET=$(json POST "$BASE/admin/events/$EID/settle" "$ATOKEN" "{\"homeScore\":3,\"awayScore\":0,\"winningOutcomeIds\":[\"$OID\"]}")
-  check "one winner paid" "1" "$(echo "$SET" | j result.wonCount)"
+  check "winners paid" "yes" "$(echo "$SET" | j result.wonCount | grep -qE '^[0-9]+$' && echo yes || echo no)"
 
   echo "== double settlement blocked =="
   check "second settle -> 409" "409" "$(code POST "$BASE/admin/events/$EID/settle" -H "$AAUTH" -H 'content-type: application/json' -d "{\"homeScore\":3,\"awayScore\":0,\"winningOutcomeIds\":[\"$OID\"]}")"
 
   echo "== payout credited once =="
   ME2=$(curl -sS "$BASE/me" -H "$AUTH")
-  EXPECTED=$(python3 -c "import sys;print(900 + round(100*float(sys.argv[1])))" "$ODDS")
+  EXPECTED=$(python3 -c "import sys;print(400 + round(100*float(sys.argv[1])))" "$ODDS")
   check "balance after win" "$EXPECTED" "$(echo "$ME2" | j user.balance)"
   check "won count" "1" "$(echo "$ME2" | j user.stats.won)"
 
-  echo "== lower prize minimum, then request a prize =="
-  json PUT "$BASE/admin/settings" "$ATOKEN" '{"prizes.minRequest":100}' > /dev/null
-  PRIZE=$(json POST "$BASE/prizes" "$TOKEN" "{\"amount\":500,\"telegramUsername\":\"@tester_tg\",\"idempotencyKey\":\"prize-$RANDOM$RANDOM\"}")
+  echo "== only winnings are withdrawable =="
+  # The stake was paid with bonus points, so only the profit becomes cashable.
+  WITHDRAWABLE=$(python3 -c "import sys;print(int(sys.argv[1]) - 500)" "$EXPECTED")
+  check "withdrawable = profit" "$WITHDRAWABLE" "$(echo "$ME2" | j user.withdrawableBalance)"
+
+  echo "== bonus-only points cannot be withdrawn =="
+  # A fresh account has a signup bonus but no winnings: a prize request must fail.
+  U2="bonusonly_$RANDOM$RANDOM"
+  REG2=$(json POST "$BASE/auth/register" "" "{\"username\":\"$U2\",\"password\":\"SuperSecret123\"}")
+  TOKEN2=$(echo "$REG2" | j accessToken)
+  check "bonus-only balance" "500" "$(echo "$REG2" | j user.balance)"
+  check "bonus-only withdrawable" "0" "$(echo "$REG2" | j user.withdrawableBalance)"
+  check "bonus-only prize -> 400" "400" "$(code POST "$BASE/prizes" -H "Authorization: Bearer $TOKEN2" -H 'content-type: application/json' -d '{"stars":1,"telegramUsername":"tester_tg"}')"
+
+  echo "== request a prize in Stars =="
+  json PUT "$BASE/admin/settings" "$ATOKEN" '{"prizes.pointsPerStar":1,"prizes.minStars":1}' > /dev/null
+  PRIZE=$(json POST "$BASE/prizes" "$TOKEN" "{\"stars\":10,\"telegramUsername\":\"@tester_tg\",\"idempotencyKey\":\"prize-$RANDOM$RANDOM\"}")
   PZID=$(echo "$PRIZE" | j prize.id)
   check "prize pending" "pending" "$(echo "$PRIZE" | j prize.status)"
-  AFTER_RESERVE=$(python3 -c "import sys;print(int(sys.argv[1])-500)" "$EXPECTED")
+  check "prize stars stored" "10" "$(echo "$PRIZE" | j prize.stars)"
+  AFTER_RESERVE=$(python3 -c "import sys;print(int(sys.argv[1])-10)" "$EXPECTED")
   check "prize reserves points" "$AFTER_RESERVE" "$(echo "$PRIZE" | j balance)"
-  check "prize below minimum -> 400" "400" "$(code POST "$BASE/prizes" -H "$AUTH" -H 'content-type: application/json' -d '{"amount":10,"telegramUsername":"tester_tg"}')"
+  check "prize below minimum -> 400" "400" "$(code POST "$BASE/prizes" -H "$AUTH" -H 'content-type: application/json' -d '{"stars":0,"telegramUsername":"tester_tg"}')"
 
   echo "== admin approves and issues prize =="
   AP=$(json POST "$BASE/admin/prizes/$PZID/approve" "$ATOKEN" '{}')
@@ -141,7 +171,7 @@ else
   check "issued" "issued" "$(echo "$IS" | j prize.status)"
 
   echo "== reject without reason is refused =="
-  PRIZE2=$(json POST "$BASE/prizes" "$TOKEN" "{\"amount\":500,\"telegramUsername\":\"@tester_tg\",\"idempotencyKey\":\"prize2-$RANDOM$RANDOM\"}")
+  PRIZE2=$(json POST "$BASE/prizes" "$TOKEN" "{\"stars\":10,\"telegramUsername\":\"@tester_tg\",\"idempotencyKey\":\"prize2-$RANDOM$RANDOM\"}")
   PZ2=$(echo "$PRIZE2" | j prize.id)
   check "reject w/o reason -> 400" "400" "$(code POST "$BASE/admin/prizes/$PZ2/reject" -H "$AAUTH" -H 'content-type: application/json' -d '{}')"
   RJ=$(json POST "$BASE/admin/prizes/$PZ2/reject" "$ATOKEN" '{"rejectReason":"Недостаточно подтверждений"}')

@@ -19,12 +19,13 @@ router.get(
     const usage = await prizeFundUsage();
     res.json({
       enabled: s['prizes.enabled'],
-      minRequest: s['prizes.minRequest'],
-      maxFund: s['prizes.maxFund'],
+      minStars: s['prizes.minStars'],
+      maxStars: s['prizes.maxStars'],
+      pointsPerStar: s['prizes.pointsPerStar'],
       used: usage.used,
-      remaining: Math.max(0, s['prizes.maxFund'] - usage.used),
+      remaining: Math.max(0, s['prizes.maxStars'] - usage.used),
       rulesText: s['prizes.rulesText'],
-      note: 'Призы выдаются вручную в Telegram Stars после одобрения администратором.',
+      note: 'Призы выдаются вручную в Telegram Stars после одобрения администратором. Принимаются только выводимые очки (выигранные в прогнозах).',
     });
   }),
 );
@@ -42,20 +43,20 @@ const prizeLimiter = rateLimit({
   message: { error: { code: 'rate_limited', message: 'Слишком много заявок на призы' } },
 });
 
-/** POST /api/prizes — request a prize payout. */
+/** POST /api/prizes — request a prize payout (denominated in Telegram Stars). */
 router.post(
   '/',
   prizeLimiter,
   validate(
     z.object({
-      amount: z.coerce.number().int().positive('Сумма должна быть положительной'),
+      stars: z.coerce.number().int().positive('Количество звёзд должно быть положительным'),
       telegramUsername: z.string().trim().min(1, 'Укажите Telegram @username'),
       userNote: z.string().trim().max(500).optional(),
       idempotencyKey: z.string().min(8).max(64).optional(),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { amount, telegramUsername, userNote, idempotencyKey } = req.body;
+    const { stars, telegramUsername, userNote, idempotencyKey } = req.body;
 
     if (idempotencyKey) {
       const nonce = await one(
@@ -75,12 +76,17 @@ router.post(
     }
 
     const prize = await withTransaction((client) =>
-      createPrizeRequest(client, { userId: req.user!.id, amount, telegramUsername, userNote }),
+      createPrizeRequest(client, { userId: req.user!.id, stars, telegramUsername, userNote }),
     );
-    const balance = await one<{ balance: string }>('SELECT balance FROM users WHERE id = $1', [
-      req.user!.id,
-    ]);
-    res.status(201).json({ prize: mapPrize(prize), balance: Number(balance?.balance ?? 0) });
+    const balance = await one<{ balance: string; withdrawable_balance: string }>(
+      'SELECT balance, withdrawable_balance FROM users WHERE id = $1',
+      [req.user!.id],
+    );
+    res.status(201).json({
+      prize: mapPrize(prize),
+      balance: Number(balance?.balance ?? 0),
+      withdrawableBalance: Number(balance?.withdrawable_balance ?? 0),
+    });
   }),
 );
 
@@ -120,6 +126,7 @@ export function mapPrize(r: Record<string, unknown>) {
     id: r.id,
     userId: r.user_id,
     amount: Number(r.amount),
+    stars: Number(r.stars ?? 0),
     telegramUsername: r.telegram_username,
     status: r.status,
     userNote: r.user_note,

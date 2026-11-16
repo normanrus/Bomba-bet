@@ -22,6 +22,7 @@ data class User(
     val avatarSeed: String = "bb",
     val avatarUrl: String? = null,
     val balance: Double = 0.0,
+    val withdrawableBalance: Double = 0.0,
     val role: String = "user",
     val status: String = "active",
     val telegramUsername: String? = null,
@@ -142,6 +143,7 @@ data class Prize(
     val id: String,
     val userId: String,
     val amount: Double,
+    val stars: Int = 0,
     val telegramUsername: String,
     val status: String,
     val userNote: String? = null,
@@ -157,8 +159,9 @@ data class PrizesResponse(val prizes: List<Prize> = emptyList())
 @Serializable
 data class PrizeRules(
     val enabled: Boolean = true,
-    val minRequest: Double = 0.0,
-    val maxFund: Double = 0.0,
+    val minStars: Int = 0,
+    val maxStars: Int = 0,
+    val pointsPerStar: Int = 0,
     val used: Double = 0.0,
     val remaining: Double = 0.0,
     val rulesText: String = "",
@@ -167,7 +170,7 @@ data class PrizeRules(
 
 @Serializable
 data class CreatePrizeRequest(
-    val amount: Int,
+    val stars: Int,
     val telegramUsername: String,
     val userNote: String? = null,
     val idempotencyKey: String? = null,
@@ -177,6 +180,7 @@ data class CreatePrizeRequest(
 data class PrizeResponse(
     val prize: Prize,
     val balance: Double = 0.0,
+    val withdrawableBalance: Double = 0.0,
 )
 
 @Serializable
@@ -200,6 +204,7 @@ data class LedgerEntry(
     val id: Long,
     val delta: Double,
     val balanceAfter: Double,
+    val withdrawableAfter: Double = 0.0,
     val reason: String,
     val note: String? = null,
     val createdAt: String,
@@ -254,8 +259,9 @@ data class BonusSettings(
 @Serializable
 data class PrizeSettings(
     val enabled: Boolean = true,
-    val minRequest: Int = 0,
-    val maxFund: Int = 0,
+    val minStars: Int = 0,
+    val maxStars: Int = 0,
+    val pointsPerStar: Int = 0,
     val rulesText: String = "",
 )
 

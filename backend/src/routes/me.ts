@@ -17,7 +17,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const row = await one(
-      `SELECT id, username, avatar_seed, avatar_url, balance, role, status,
+      `SELECT id, username, avatar_seed, avatar_url, balance, withdrawable_balance, role, status,
               telegram_username, created_at, must_change_password
          FROM users WHERE id = $1`,
       [req.user!.id],
@@ -84,7 +84,7 @@ router.patch(
       `UPDATE users SET telegram_username = $2,
               avatar_seed = COALESCE($3, avatar_seed), updated_at = now()
         WHERE id = $1
-        RETURNING id, username, avatar_seed, avatar_url, balance, role, status, telegram_username, created_at`,
+        RETURNING id, username, avatar_seed, avatar_url, balance, withdrawable_balance, role, status, telegram_username, created_at`,
       [req.user!.id, telegramUsername || null, avatarSeed ?? null],
     );
     res.json({ user: mapUser(row as Record<string, unknown>) });

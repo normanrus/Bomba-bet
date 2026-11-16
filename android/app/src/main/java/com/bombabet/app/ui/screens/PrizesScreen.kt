@@ -50,16 +50,17 @@ fun PrizesScreen(
     error: String?,
     busy: Boolean,
     onRetry: () -> Unit,
-    onSubmit: (amount: Int, telegram: String, note: String?) -> Unit,
+    onSubmit: (stars: Int, telegram: String, note: String?) -> Unit,
     onCancel: (String) -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    var amount by remember { mutableStateOf("") }
+    var stars by remember { mutableStateOf("") }
     var telegram by remember { mutableStateOf(user?.telegramUsername ?: "") }
     var note by remember { mutableStateOf("") }
     var formError by remember { mutableStateOf<String?>(null) }
 
     val hasPending = prizes?.any { it.status == "pending" || it.status == "approved" } == true
+    val pointsPerStar = rules.pointsPerStar.coerceAtLeast(1)
 
     Column(Modifier.fillMaxSize().background(BbColors.Bg)) {
         LazyColumn(
@@ -105,7 +106,7 @@ fun PrizesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = rules.enabled && !hasPending && !busy,
                     onClick = {
-                        amount = (rules.minRequest.toInt().coerceAtLeast(1)).toString()
+                        stars = rules.minStars.coerceAtLeast(1).toString()
                         formError = null
                         showDialog = true
                     },
@@ -150,10 +151,16 @@ fun PrizesScreen(
             text = {
                 Column {
                     BbField(
-                        value = amount,
-                        onValueChange = { amount = it.filter { c -> c.isDigit() }.take(7) },
-                        label = "Сумма (мин. ${Format.points(rules.minRequest)})",
+                        value = stars,
+                        onValueChange = { stars = it.filter { c -> c.isDigit() }.take(5) },
+                        label = "Приз в звёздах (мин. ${rules.minStars})",
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "1 звезда = ${Format.points(pointsPerStar.toDouble())} очков. Доступно к выводу: ${Format.points(user?.withdrawableBalance ?: 0.0)} очк.",
+                        color = BbColors.Accent2,
+                        fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(10.dp))
                     BbField(
@@ -185,11 +192,14 @@ fun PrizesScreen(
                     text = "Отправить заявку",
                     loading = busy,
                     onClick = {
-                        val value = amount.toIntOrNull() ?: 0
+                        val value = stars.toIntOrNull() ?: 0
                         val cleanTg = telegram.trim().removePrefix("@")
+                        val need = value.toDouble() * pointsPerStar
                         formError = when {
-                            value < rules.minRequest -> "Минимальная сумма ${Format.points(rules.minRequest)}"
-                            value > (user?.balance ?: 0.0) -> "Недостаточно очков на балансе"
+                            value < rules.minStars -> "Минимальный приз ${rules.minStars} ⭐"
+                            rules.maxStars > 0 && value > rules.maxStars -> "Максимальный приз ${rules.maxStars} ⭐"
+                            need > (user?.withdrawableBalance ?: 0.0) ->
+                                "Недостаточно выводимых очков: нужно ${Format.points(need)}, доступно ${Format.points(user?.withdrawableBalance ?: 0.0)}"
                             cleanTg.length < 5 -> "Укажите Telegram @username"
                             else -> null
                         }
@@ -221,28 +231,37 @@ private fun FundCard(rules: PrizeRules, user: User?) {
             Text("ПРИЗОВОЙ ФОНД", color = BbColors.Muted, fontSize = 10.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Text(
-                "${Format.points(rules.remaining)} / ${Format.points(rules.maxFund)}",
+                "${Format.points(rules.remaining)} / ${Format.points(rules.maxStars.toDouble())} ⭐",
                 color = BbColors.Text,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
             )
             Spacer(Modifier.height(4.dp))
-            Text("Выдано: ${Format.points(rules.used)} очков", color = BbColors.Muted, fontSize = 11.sp)
+            Text("Выдано: ${Format.points(rules.used)} ⭐", color = BbColors.Muted, fontSize = 11.sp)
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("Ваш баланс", color = BbColors.Muted, fontSize = 10.sp)
+                    Text("Всего очков", color = BbColors.Muted, fontSize = 10.sp)
                     Text(
                         Format.points(user?.balance ?: 0.0),
+                        color = BbColors.Text,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Выводимо", color = BbColors.Muted, fontSize = 10.sp)
+                    Text(
+                        Format.points(user?.withdrawableBalance ?: 0.0),
                         color = BbColors.Accent2,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Минимальная заявка", color = BbColors.Muted, fontSize = 10.sp)
+                    Text("Мин. приз", color = BbColors.Muted, fontSize = 10.sp)
                     Text(
-                        Format.points(rules.minRequest),
+                        "${rules.minStars} ⭐",
                         color = BbColors.Text,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
@@ -259,7 +278,8 @@ private fun PrizeCard(prize: Prize, onCancel: (String) -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "${Format.points(prize.amount)} очков",
+                    if (prize.stars > 0) "${prize.stars} ⭐ (${Format.points(prize.amount)} очк)"
+                    else "${Format.points(prize.amount)} очков",
                     color = BbColors.Text,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Black,

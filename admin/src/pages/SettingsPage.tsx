@@ -188,21 +188,30 @@ export function SettingsPage() {
             Приём заявок на призы включён
           </label>
           <div className="field">
-            <label>Общий лимит призового фонда</label>
+            <label>Общий лимит призового фонда, звёзд</label>
             <input
               className="input"
               type="number"
-              value={settings['prizes.maxFund']}
-              onChange={(e) => set('prizes.maxFund', Number(e.target.value))}
+              value={settings['prizes.maxStars']}
+              onChange={(e) => set('prizes.maxStars', Number(e.target.value))}
             />
           </div>
           <div className="field">
-            <label>Минимальная сумма заявки</label>
+            <label>Минимальный приз, звёзд</label>
             <input
               className="input"
               type="number"
-              value={settings['prizes.minRequest']}
-              onChange={(e) => set('prizes.minRequest', Number(e.target.value))}
+              value={settings['prizes.minStars']}
+              onChange={(e) => set('prizes.minStars', Number(e.target.value))}
+            />
+          </div>
+          <div className="field">
+            <label>Курс: сколько очков стоит 1 звезда</label>
+            <input
+              className="input"
+              type="number"
+              value={settings['prizes.pointsPerStar']}
+              onChange={(e) => set('prizes.pointsPerStar', Number(e.target.value))}
             />
           </div>
           <div className="field">

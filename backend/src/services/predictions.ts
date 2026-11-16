@@ -133,8 +133,10 @@ export async function placePrediction(client: PoolClient, input: PlaceInput) {
   const odds = Number(outcome.odds);
   const potentialPayout = Math.round(stake * odds);
 
-  // Debit the stake (locks the user row, prevents double-spend).
-  await applyBalanceChange(client, {
+  // Debit the stake (locks the user row, prevents double-spend). The result tells
+  // us how much of it came from cashable points, so refunds and payouts can be
+  // split back the same way.
+  const debit = await applyBalanceChange(client, {
     userId: input.userId,
     delta: -stake,
     reason: 'prediction_stake',
@@ -142,11 +144,12 @@ export async function placePrediction(client: PoolClient, input: PlaceInput) {
     refId: input.eventId,
     note: `${event.team_home} — ${event.team_away}: ${outcome.label}`,
   });
+  const stakeWithdrawable = -debit.withdrawableDelta;
 
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO predictions
-       (user_id, event_id, market_id, outcome_id, stake, odds, potential_payout, idempotency_key)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (user_id, event_id, market_id, outcome_id, stake, stake_withdrawable, odds, potential_payout, idempotency_key)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       input.userId,
@@ -154,6 +157,7 @@ export async function placePrediction(client: PoolClient, input: PlaceInput) {
       input.marketId,
       input.outcomeId,
       stake,
+      stakeWithdrawable,
       odds,
       potentialPayout,
       input.idempotencyKey ?? null,
@@ -218,12 +222,13 @@ export async function settleEvent(
     id: string;
     user_id: string;
     stake: string;
+    stake_withdrawable: string;
     odds: string;
     outcome_id: string;
     market_id: string;
     potential_payout: string;
   }>(
-    `SELECT id, user_id, stake, odds, outcome_id, market_id, potential_payout
+    `SELECT id, user_id, stake, stake_withdrawable, odds, outcome_id, market_id, potential_payout
        FROM predictions
       WHERE event_id = $1 AND status = 'pending'
       FOR UPDATE`,
@@ -238,11 +243,16 @@ export async function settleEvent(
 
   for (const p of pending.rows) {
     const stake = Number(p.stake);
+    const stakeWithdrawable = Number(p.stake_withdrawable);
     if (winners.has(p.outcome_id)) {
       const payout = Math.round(stake * Number(p.odds));
+      // The cashable stake comes back, and all profit is winnings. So a bet made
+      // with free points only unlocks its profit, never the free points themselves.
+      const profit = payout - stake;
       await applyBalanceChange(client, {
         userId: p.user_id,
         delta: payout,
+        withdrawableDelta: stakeWithdrawable + profit,
         reason: 'prediction_payout',
         refType: 'prediction',
         refId: p.id,
@@ -259,6 +269,7 @@ export async function settleEvent(
       await applyBalanceChange(client, {
         userId: p.user_id,
         delta: stake,
+        withdrawableDelta: stakeWithdrawable,
         reason: 'prediction_refund',
         refType: 'prediction',
         refId: p.id,
@@ -290,8 +301,8 @@ export async function settleEvent(
 }
 
 export async function voidEvent(client: PoolClient, opts: { eventId: string; actorId: string; reason?: string }) {
-  const pending = await client.query<{ id: string; user_id: string; stake: string }>(
-    `SELECT id, user_id, stake FROM predictions WHERE event_id = $1 AND status = 'pending' FOR UPDATE`,
+  const pending = await client.query<{ id: string; user_id: string; stake: string; stake_withdrawable: string }>(
+    `SELECT id, user_id, stake, stake_withdrawable FROM predictions WHERE event_id = $1 AND status = 'pending' FOR UPDATE`,
     [opts.eventId],
   );
   let refunded = 0;
@@ -300,6 +311,7 @@ export async function voidEvent(client: PoolClient, opts: { eventId: string; act
     await applyBalanceChange(client, {
       userId: p.user_id,
       delta: stake,
+      withdrawableDelta: Number(p.stake_withdrawable),
       reason: 'prediction_refund',
       refType: 'prediction',
       refId: p.id,

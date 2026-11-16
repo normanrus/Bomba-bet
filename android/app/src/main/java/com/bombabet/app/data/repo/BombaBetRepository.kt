@@ -147,11 +147,11 @@ class BombaBetRepository(
 
     suspend fun myPrizes(): ApiResult<List<Prize>> = apiCall { api.myPrizes().prizes }
 
-    suspend fun requestPrize(amount: Int, telegram: String, note: String?): ApiResult<Prize> =
+    suspend fun requestPrize(stars: Int, telegram: String, note: String?): ApiResult<Prize> =
         apiCall {
             api.requestPrize(
                 com.bombabet.app.data.model.CreatePrizeRequest(
-                    amount = amount,
+                    stars = stars,
                     telegramUsername = telegram,
                     userNote = note,
                     idempotencyKey = UUID.randomUUID().toString(),

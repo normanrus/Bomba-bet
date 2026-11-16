@@ -49,7 +49,7 @@ router.get(
       eventsUpcoming: Number(totals!.events_upcoming),
       prizesPending: Number(totals!.prizes_pending),
       prizesIssued: Number(totals!.prizes_issued),
-      prizeFund: { used: usage.used, issued: usage.issued, limit: s['prizes.maxFund'] },
+      prizeFund: { used: usage.used, issued: usage.issued, limit: s['prizes.maxStars'] },
       recentAudit: recent.map((r) => ({
         id: Number(r.id),
         action: r.action,

@@ -3,6 +3,7 @@ import { generateStrongPassword, hashPassword, sha256, verifyPassword } from '..
 import { mapPrediction } from '../services/predictions';
 import { mapUser } from '../services/users';
 import { AppError, badRequest, conflict, forbidden, notFound, unauthorized } from '../utils/errors';
+import { resolveSplit, type BalanceChange } from '../services/economy';
 
 describe('пароли', () => {
   it('хэш не совпадает с открытым паролем и проверяется обратно', async () => {
@@ -121,6 +122,57 @@ describe('mapPrediction', () => {
     expect(p.event.homeScore).toBe(3);
     expect(p.event.awayScore).toBe(1);
     expect(p.status).toBe('won');
+  });
+});
+
+describe('разделение баланса: бонусные и выводимые очки', () => {
+  const change = (delta: number, extra: Partial<BalanceChange> = {}): BalanceChange => ({
+    userId: 'u1',
+    delta,
+    reason: 'signup_bonus',
+    ...extra,
+  });
+
+  it('бонус целиком попадает в невыводимый кошелёк', () => {
+    const s = resolveSplit(change(1000), 1000, 0);
+    expect(s.balanceDelta).toBe(1000);
+    expect(s.withdrawableDelta).toBe(0);
+  });
+
+  it('выигрыш целиком становится выводимым', () => {
+    const s = resolveSplit(change(300, { reason: 'prediction_payout' }), 300, 0);
+    expect(s.balanceDelta).toBe(300);
+    expect(s.withdrawableDelta).toBe(300);
+  });
+
+  it('ставка сначала тратит бонусные очки', () => {
+    const s = resolveSplit(change(-100, { reason: 'prediction_stake' }), 1000, 100);
+    expect(s.balanceDelta).toBe(-100);
+    expect(s.withdrawableDelta).toBe(0);
+  });
+
+  it('ставка залезает в выводимые, только когда бонусные кончились', () => {
+    // 60 free + 40 cashable; a 100 stake drains free first, then 40 cashable.
+    const s = resolveSplit(change(-100, { reason: 'prediction_stake' }), 100, 40);
+    expect(s.balanceDelta).toBe(-100);
+    expect(s.withdrawableDelta).toBe(-40);
+  });
+
+  it('резерв приза списывает только выводимые очки', () => {
+    const s = resolveSplit(change(-500, { reason: 'prize_reserve' }), 1300, 800);
+    expect(s.balanceDelta).toBe(-500);
+    expect(s.withdrawableDelta).toBe(-500);
+  });
+
+  it('возврат приза возвращает очки в выводимый кошелёк', () => {
+    const s = resolveSplit(change(500, { reason: 'prize_refund' }), 100, 100);
+    expect(s.withdrawableDelta).toBe(500);
+  });
+
+  it('явный withdrawableDelta перебивает политику по умолчанию', () => {
+    const s = resolveSplit(change(200, { withdrawableDelta: 0 }), 200, 0);
+    expect(s.balanceDelta).toBe(200);
+    expect(s.withdrawableDelta).toBe(0);
   });
 });
 

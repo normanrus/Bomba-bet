@@ -228,14 +228,15 @@ class BombaBetRepositoryTest {
                     "maintenance":{"enabled":false,"message":""},
                     "predictions":{"enabled":true,"minStake":10,"maxStake":50000,"maxOpenPerUser":100},
                     "bonuses":{"enabled":true,"signupAmount":1000,"dailyChance":0.4,"dailyMin":50,"dailyMax":400,"rulesText":""},
-                    "prizes":{"enabled":true,"minRequest":5000,"maxFund":100000,"rulesText":""},
+                    "prizes":{"enabled":true,"minStars":5,"maxStars":125,"pointsPerStar":100,"rulesText":""},
                     "disclaimer":"Бесплатный проект"}""",
             )
         }
 
         val cfg = (repo.config() as ApiResult.Ok).value
         assertEquals("БОМБА БЕТ", cfg.appName)
-        assertEquals(5000, cfg.prizes.minRequest)
+        assertEquals(125, cfg.prizes.maxStars)
+        assertEquals(100, cfg.prizes.pointsPerStar)
         assertNotNull(cfg.bonuses)
         assertEquals(0.4, cfg.bonuses.dailyChance, 0.001)
     }

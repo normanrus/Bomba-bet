@@ -16,8 +16,9 @@ export interface AppSettings {
   'bonuses.dailyMax': number;
   'bonuses.rulesText': string;
   'prizes.enabled': boolean;
-  'prizes.maxFund': number;
-  'prizes.minRequest': number;
+  'prizes.maxStars': number;
+  'prizes.minStars': number;
+  'prizes.pointsPerStar': number;
   'prizes.rulesText': string;
   'maintenance.enabled': boolean;
   'maintenance.message': string;
@@ -32,20 +33,24 @@ export const DEFAULT_SETTINGS: AppSettings = {
   'predictions.maxStake': 50000,
   'predictions.maxOpenPerUser': 100,
   'bonuses.enabled': true,
-  'bonuses.signupAmount': 1000,
+  'bonuses.signupAmount': 500,
   'bonuses.dailyChance': 0.25,
   'bonuses.dailyMin': 25,
-  'bonuses.dailyMax': 250,
+  'bonuses.dailyMax': 150,
   'bonuses.rulesText':
     'Приветственный бонус начисляется один раз при регистрации. ' +
     'Случайный бонус может начисляться не чаще одного раза в сутки: ' +
-    'шанс 25%, сумма от 25 до 250 очков. Вероятности фиксированы и одинаковы для всех.',
+    'шанс 25%, сумма от 25 до 150 очков. Вероятности фиксированы и одинаковы для всех. ' +
+    'Бонусные очки нельзя вывести — приз формируют только очки, выигранные в прогнозах.',
   'prizes.enabled': true,
-  'prizes.maxFund': 100000,
-  'prizes.minRequest': 1000,
+  'prizes.maxStars': 125,
+  'prizes.minStars': 5,
+  'prizes.pointsPerStar': 100,
   'prizes.rulesText':
     'Призы выдаются вручную администратором в Telegram Stars. ' +
-    'Укажите свой Telegram @username — администратор свяжется с вами после одобрения.',
+    'К призу принимаются только выводимые очки — выигранные в прогнозах. ' +
+    'Бесплатные (бонусные) очки вывести нельзя. Укажите свой Telegram @username, ' +
+    'администратор свяжется с вами после одобрения заявки.',
   'maintenance.enabled': false,
   'maintenance.message': 'Идут технические работы. Скоро вернёмся!',
 };

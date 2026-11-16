@@ -6,6 +6,7 @@ export interface PublicUser {
   avatarSeed: string;
   avatarUrl: string | null;
   balance: number;
+  withdrawableBalance: number;
   role: string;
   status: string;
   telegramUsername: string | null;
@@ -31,6 +32,7 @@ export function mapUser(row: Record<string, unknown>): PublicUser {
     avatarSeed: String(row.avatar_seed ?? 'bb'),
     avatarUrl: (row.avatar_url as string) ?? null,
     balance: Number(row.balance ?? 0),
+    withdrawableBalance: Number(row.withdrawable_balance ?? 0),
     role: String(row.role),
     status: String(row.status),
     telegramUsername: (row.telegram_username as string) ?? null,
