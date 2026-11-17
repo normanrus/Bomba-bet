@@ -50,6 +50,7 @@ gradle :app:assembleRelease -PapiBaseUrl=https://<ваш-домен>
 
 * `docs/DEPLOYMENT.md` — запуск сервера, переменные окружения, бэкапы, обновления.
 * `docs/DEPLOY_CLOUD.md` — деплой в облако: Docker-backend на любом хостинге, база Neon, админка на Vercel.
+* `docs/DEPLOY_STEP_BY_STEP.md` — подробный туториал по деплою без Render: Northflank + база + Vercel + APK.
 * `docs/BUILD_APK.md` — установка Android SDK и сборка APK.
 
 ## Возможности

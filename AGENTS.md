@@ -18,7 +18,7 @@ flows, deposits, or payment integrations.
 - `android/` — Kotlin + Jetpack Compose app.
 - `docker/` — entrypoint script and backup directory.
 - `docker-compose.yml` — db + api + admin + backup stack.
-- `docs/` — `DEPLOYMENT.md`, `DEPLOY_CLOUD.md`, `BUILD_APK.md`.
+- `docs/` — `DEPLOYMENT.md`, `DEPLOY_CLOUD.md`, `DEPLOY_STEP_BY_STEP.md`, `BUILD_APK.md`.
 
 ## Build and test commands
 
