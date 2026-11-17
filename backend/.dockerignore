@@ -1,0 +1,14 @@
+# Keep the build context small and never upload secrets to a remote builder.
+# Without this, `backend/.env` (real JWT secret, DB password) would be sent to
+# any cloud Docker build service (Northflank, Koyeb, Cloud Run, ...).
+node_modules
+dist
+.env
+.env.*
+!.env.example
+npm-debug.log*
+coverage
+.git
+.gitignore
+Dockerfile
+.dockerignore

@@ -219,10 +219,11 @@ export async function seedDemoData(): Promise<void> {
       [mk.rows[0].id],
     );
 
-    // Winners and losers across demo users.
+    // Winners and losers across demo users. Stakes must stay within the 500
+    // demo bonus above, otherwise applyBalanceChange rejects the stake.
     for (let i = 0; i < userIds.length; i++) {
       const won = i % 2 === 0;
-      const stake = 500 + i * 100;
+      const stake = 50 + i * 50;
       await applyBalanceChange(client, {
         userId: userIds[i],
         delta: -stake,

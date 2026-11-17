@@ -18,7 +18,7 @@ flows, deposits, or payment integrations.
 - `android/` — Kotlin + Jetpack Compose app.
 - `docker/` — entrypoint script and backup directory.
 - `docker-compose.yml` — db + api + admin + backup stack.
-- `docs/` — `DEPLOYMENT.md`, `DEPLOY_RENDER.md`, `BUILD_APK.md`.
+- `docs/` — `DEPLOYMENT.md`, `DEPLOY_CLOUD.md`, `BUILD_APK.md`.
 
 ## Build and test commands
 
@@ -73,15 +73,23 @@ Full stack:
 - The daily bonus counts failed rolls (`kind IN ('daily','daily_attempt')`) so
   the published "once per day" rule cannot be bypassed by spamming requests.
 - Do not commit `.env`; it holds real secrets. Use `.env.example` as the template.
-- Render deploy gotchas (see `docs/DEPLOY_RENDER.md`, `render.yaml`):
-  `package.json` lives in `backend/`, so the Render service needs
-  **Root Directory = `backend`** or the build fails with
-  `ENOENT .../src/package.json`. Render sets `NODE_ENV=production`, which makes
-  `npm ci` skip devDependencies, so the build command must be
-  `npm ci --include=dev && npm run build` (otherwise `tsc: not found`).
-  In production, missing `DATABASE_URL`/`JWT_SECRET` throws at boot on purpose.
-- Server binds `config.host` (`HOST`, default `0.0.0.0`); startup retries the DB
-  `DB_READY_ATTEMPTS` (30) times every `DB_READY_DELAY_MS` (2000ms) so a managed
-  database that is still booting does not crash-loop the service.
+- Cloud deploy (see `docs/DEPLOY_CLOUD.md`): the backend ships as a Docker image
+  (`backend/Dockerfile`), so it runs on any Docker host. Do **not** try to deploy
+  the backend to Vercel — it is a long-lived server with a `pg.Pool`, not a
+  serverless function. The admin SPA does belong on Vercel.
+- `backend/.dockerignore` excludes `.env`; keep it that way so a remote image
+  build never receives the real `JWT_SECRET` or DB password in its build context.
+- Any host that sets `NODE_ENV=production` makes `npm ci` skip devDependencies,
+  so a non-Docker build needs `npm ci --include=dev && npm run build` (the
+  Dockerfile avoids this by using a separate build stage with `npm ci`).
+- In production, a missing `DATABASE_URL`/`JWT_SECRET` throws at boot on purpose.
+- The server binds `config.host` (`HOST`, default `0.0.0.0`); startup retries the
+  DB `DB_READY_ATTEMPTS` (30) times every `DB_READY_DELAY_MS` (2000ms) so a
+  managed database that is still booting does not crash-loop the service.
+- `admin/vercel.json` adds an SPA rewrite to `/index.html`. It is required:
+  without it, a browser refresh on `/users` or `/events` returns 404. Vercel
+  serves real files before applying rewrites, so `/assets/*` still loads.
+- The admin bundle reads `VITE_API_BASE` at **build time**. Changing it in Vercel
+  requires a redeploy; setting it without rebuilding has no effect.
 - UI language is Russian. Theme: dark graphite (`#0A0A0C`/`#121216`) with red
   (`#FF3B30`) and orange (`#FF7A18`) accents.

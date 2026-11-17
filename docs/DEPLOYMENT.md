@@ -220,13 +220,17 @@ docker compose restart api      # применит новые миграции �
 
 ---
 
-## 9. Развёртывание на Render
+## 9. Развёртывание в облако
 
-Backend можно развернуть на Render как Web Service + PostgreSQL. Ключевой
-момент: backend лежит в подпапке `backend/`, поэтому в Render обязательно
-нужно указать **Root Directory = `backend`**, иначе сборка падает с
-`ENOENT ... /src/package.json`.
+Backend — это Docker-контейнер (`backend/Dockerfile`), поэтому его можно
+запустить на любом хостинге с поддержкой Docker: Northflank, Koyeb, Google
+Cloud Run, Render, Fly.io. База данных — внешний PostgreSQL (рекомендую Neon:
+бесплатный тариф постоянный, в отличие от Render Postgres, который удаляется
+через 30 дней). Админ-панель разворачивается отдельно на Vercel.
 
-Готовый blueprint — в корне репозитория (`render.yaml`). Пошаговая инструкция,
-настройки сервиса, переменные окружения, подключение базы, публичный URL и
-замена `localhost` в Android-приложении — в `docs/DEPLOY_RENDER.md`.
+Схема, переменные окружения, подключение Neon, настройка CORS, сборка APK под
+свой домен и разбор частых ошибок — в `docs/DEPLOY_CLOUD.md`.
+
+> Backend намеренно **не** деплоится на Vercel: это долгоживущий сервер с пулом
+> соединений к Postgres, а Vercel запускает serverless-функции. Админку на
+> Vercel — можно, backend — нет.
