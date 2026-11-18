@@ -32,28 +32,38 @@ fi
 info "Docker готов"
 
 # ---------------------------------------------------------------- .env
+# Generate secrets with openssl, falling back to /dev/urandom, so we do not
+# depend on python3 being present in the base image.
+rand_hex() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex "$1"
+  else
+    od -An -tx1 -N "$1" /dev/urandom | tr -d ' \n'
+  fi
+}
+
 if [ ! -f .env ]; then
   info "создаю .env со случайными секретами"
   cp .env.example .env
-  python3 - .env "$(openssl rand -hex 16)" "$(openssl rand -hex 32)" <<'PY'
-import sys
-path, db_pass, jwt = sys.argv[1], sys.argv[2], sys.argv[3]
-out = []
-for line in open(path, encoding='utf-8'):
-    if line.startswith('POSTGRES_PASSWORD='):
-        line = f'POSTGRES_PASSWORD={db_pass}\n'
-    elif line.startswith('JWT_SECRET='):
-        line = f'JWT_SECRET={jwt}\n'
-    out.append(line)
-open(path, 'w', encoding='utf-8').writelines(out)
-PY
+  DB_PASS="$(rand_hex 16)"
+  JWT_SEC="$(rand_hex 32)"
+  sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${DB_PASS}|" .env
+  sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SEC}|" .env
   chmod 600 .env
 fi
-# Codespaces forwards 8080 publicly; keep the admin on that port.
-if grep -qE '^ADMIN_PORT=' .env; then
-  sed -i "s/^ADMIN_PORT=.*/ADMIN_PORT=${ADMIN_PORT}/" .env
-else
-  echo "ADMIN_PORT=${ADMIN_PORT}" >> .env
+# Codespaces forwards 8080 publicly; keep the admin on that port. API_PORT is
+# only used inside the codespace, but persist it too so an override actually
+# takes effect (docker compose reads .env for the port mapping).
+set_env() {
+  if grep -qE "^$1=" .env; then
+    sed -i "s|^$1=.*|$1=$2|" .env
+  else
+    echo "$1=$2" >> .env
+  fi
+}
+set_env ADMIN_PORT "$ADMIN_PORT"
+if [ -n "${API_PORT:-}" ]; then
+  set_env API_PORT "$API_PORT"
 fi
 
 # ---------------------------------------------------------------- stack

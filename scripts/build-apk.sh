@@ -27,11 +27,22 @@ case "$API_URL" in
 esac
 
 # ---------------------------------------------------------------- toolchain
-export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
+# The devcontainer "java" feature sets JAVA_HOME itself; otherwise fall back to
+# the common Debian/Ubuntu location, then to any JDK we can find.
+if [ -z "${JAVA_HOME:-}" ] || [ ! -d "${JAVA_HOME:-}" ]; then
+  if [ -d /usr/lib/jvm/java-21-openjdk-amd64 ]; then
+    JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+  elif [ -d /usr/local/sdkman/candidates/java/current ]; then
+    JAVA_HOME=/usr/local/sdkman/candidates/java/current
+  else
+    JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)" 2>/dev/null)")")" || true
+  fi
+fi
+export JAVA_HOME
 export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 
-[ -d "$JAVA_HOME" ] || die "не найден JDK в $JAVA_HOME. Запустите .devcontainer/setup.sh"
+[ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ] || die "не найден JDK. Запустите .devcontainer/setup.sh"
 [ -d "$ANDROID_HOME/platforms/android-34" ] || die "не найден Android SDK в $ANDROID_HOME. Запустите .devcontainer/setup.sh"
 
 if [ -x /opt/gradle/bin/gradle ]; then

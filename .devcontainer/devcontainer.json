@@ -10,8 +10,7 @@
       "version": "20"
     },
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21",
-      "installGradle": true
+      "version": "21"
     }
   },
   "forwardPorts": [8080, 4000],

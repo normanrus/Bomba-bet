@@ -10,6 +10,18 @@ GRADLE_VERSION=8.9
 
 info() { echo "» $*"; }
 
+# Tools the scripts rely on. The devcontainer base image usually has curl and
+# unzip, but do not assume it.
+missing=""
+for t in curl unzip openssl; do
+  command -v "$t" >/dev/null 2>&1 || missing="$missing $t"
+done
+if [ -n "$missing" ]; then
+  info "ставлю пакеты:$missing"
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq curl unzip openssl
+fi
+
 if [ -d "$SDK/platforms/android-34" ] && [ -x "$SDK/build-tools/34.0.0/aapt2" ]; then
   info "Android SDK уже установлен — пропускаю"
 else
@@ -26,9 +38,13 @@ else
 
   info "принимаю лицензии и ставлю platform 34 + build-tools..."
   export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
+  # `yes` closes the pipe early, so the SDK manager's SIGPIPE would trip
+  # pipefail; run these without it.
+  set +o pipefail
   yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
   yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" \
     "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+  set -o pipefail
 fi
 
 # The repo ships no Gradle wrapper, so install a matching Gradle.
