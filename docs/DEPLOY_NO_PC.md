@@ -33,26 +33,31 @@ Codespaces даёт полноценную Linux-машину прямо в бр
 
 1. Откройте репозиторий на GitHub: `https://github.com/normanrus/Bomba-bet`
 2. Кнопка **Code** (зелёная) → вкладка **Codespaces** → **Create codespace on main**.
-3. Подождите 1–2 минуты. Откроется редактор в браузере — это и есть компьютер.
+3. Подождите 2–5 минут. Откроется редактор в браузере — это и есть компьютер.
 
 Настройка окружения (`.devcontainer/`) уже в репозитории, поэтому Codespaces сам
-поставит Docker, Node и Android SDK.
+поставит Docker, Node 20, JDK 21 и Android SDK 34.
 
-### Шаг 2. Запустить сервер
+**Дальше ничего вводить не нужно.** При старте автоматически:
+- поднимутся база, API и админка (`.devcontainer/start.sh`);
+- соберётся APK с правильным адресом внутри.
 
-В терминале внизу (меню **Terminal → New Terminal**):
+### Шаг 2. Забрать адрес
 
-```bash
-bash scripts/codespace-up.sh
-```
-
-Скрипт поднимет базу, API и админку и напечатает адрес вида:
+Внизу откройте вкладку **TERMINAL** и пролистайте до блока:
 
 ```
-https://<имя-codespace>-8080.app.github.dev
+================================================================
+  БОМБА БЕТ запущена
+
+  Админка и API:  https://<имя-codespace>-8080.app.github.dev
+  Health:         https://<имя-codespace>-8080.app.github.dev/api/health
+  Логин:          owner
+  Пароль админа:  Bomba-xxxx-xxxx-xxxx
 ```
 
-Это и есть админка + API. Откройте с телефона.
+Пароль сервер печатает один раз при первом запуске — **сохраните его**. Дальше
+меняется при первом входе.
 
 ### Шаг 3. Сделать порт публичным
 
@@ -62,22 +67,25 @@ Codespaces обычно делает порт 8080 публичным сам (с
 1. Внизу откройте вкладку **PORTS**.
 2. Правый клик по порту **8080** → **Port Visibility** → **Public**.
 
-### Шаг 4. Собрать APK
-
-```bash
-bash scripts/build-apk.sh https://<имя-codespace>-8080.app.github.dev
-```
-
-Готово. Скачать APK на телефон:
+### Шаг 4. Скачать APK на телефон
 
 ```
 https://<имя-codespace>-8080.app.github.dev/download/release/app-release.apk
+```
+
+Если APK ещё собирается (первый запуск ~3 минуты) — обновите страницу позже.
+Пересобрать вручную:
+
+```bash
+bash scripts/build-apk.sh https://<имя-codespace>-8080.app.github.dev
 ```
 
 ### Ограничения
 
 - Codespace засыпает после 30 минут простоя — это нормально, разбудите кнопкой.
 - 120 часов в месяц: хватает для компании друзей, но это не «сервер 24/7».
+- Бесплатные минуты считаются, пока codespace включён — выключайте его, когда
+  не играете (меню слева внизу → **Stop**).
 
 ---
 
@@ -129,24 +137,35 @@ APK собирается в Codespaces (путь 2, шаг 4) с адресом 
 
 ## Частая проблема: код на GitHub устарел
 
-Локальные правки (скрипты `scripts/*.sh`, папка `.devcontainer/`, документы) нужно
-отправить на GitHub, иначе Codespaces их не увидит. Если `git push` не проходит:
+Codespaces видит только то, что уже на GitHub. Если правки не запушены — они не
+появятся в codespace. Проверить и отправить:
 
 ```bash
+git status
 git push origin main
 ```
 
-Если пишет `403` или `invalid credentials` — токен только для чтения. Заведите
-токен с правом **Contents: Read and write**:
+Если `git push` пишет `403` или `invalid credentials` — у токена нет права на
+запись. Нужен токен с правом **Contents: Read and write**:
 
-1. GitHub → **Settings → Developer settings → Personal access tokens → Tokens
-   (classic)** → **Generate new token**.
-2. Отметьте галочку **repo** (или `Contents: Read and write` для fine-grained).
-3. Скопируйте токен и используйте в адресе:
+1. GitHub → **Settings → Developer settings → Personal access tokens**.
+   - **Tokens (classic)**: отметьте галочку **repo**.
+   - **Fine-grained**: в разделе **Repository permissions** поставьте
+     **Contents: Read and write** (и **Workflows: Read and write**, если
+     меняете `.github/workflows/`).
+2. Скопируйте токен и используйте в адресе:
 
 ```bash
 git remote set-url origin https://<ТОКЕН>@github.com/normanrus/Bomba-bet.git
 git push origin main
 ```
 
-После этого Codespaces подхватит настройку автоматически.
+Как проверить, что у токена есть запись, до пуша:
+
+```bash
+curl -sS -o /dev/null -D - -H "Authorization: Bearer <ТОКЕН>" \
+  https://api.github.com/repos/normanrus/Bomba-bet | grep -i x-oauth-scopes
+```
+
+Если в ответе есть `repo` — запись есть. Если заголовка нет или нет `repo` —
+токен только для чтения.
