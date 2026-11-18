@@ -1,0 +1,32 @@
+{
+  "name": "БОМБА БЕТ",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "installGradle": true
+    }
+  },
+  "forwardPorts": [8080, 4000],
+  "portsAttributes": {
+    "8080": {
+      "label": "БОМБА БЕТ — админка + API",
+      "visibility": "public",
+      "onAutoForward": "notify"
+    },
+    "4000": {
+      "label": "API",
+      "visibility": "public",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh"
+}

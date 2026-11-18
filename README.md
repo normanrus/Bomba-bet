@@ -52,6 +52,7 @@ gradle :app:assembleRelease -PapiBaseUrl=https://<ваш-домен>
 * `docs/DEPLOY_CLOUD.md` — деплой в облако: Docker-backend на любом хостинге, база Neon, админка на Vercel.
 * `docs/DEPLOY_STEP_BY_STEP.md` — подробный туториал по деплою без Render: Northflank + база + Vercel + APK.
 * `docs/DEPLOY_TUNNEL.md` — запуск на своём компьютере + публичный адрес через Cloudflare Tunnel (скрипт `scripts/tunnel.sh`).
+* `docs/DEPLOY_NO_PC.md` — запуск без компьютера: Codespaces (браузер) и Render + Neon.
 * `docs/BUILD_APK.md` — установка Android SDK и сборка APK.
 
 ## Возможности
