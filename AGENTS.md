@@ -18,7 +18,8 @@ flows, deposits, or payment integrations.
 - `android/` — Kotlin + Jetpack Compose app.
 - `docker/` — entrypoint script and backup directory.
 - `docker-compose.yml` — db + api + admin + backup stack.
-- `docs/` — `DEPLOYMENT.md`, `DEPLOY_CLOUD.md`, `DEPLOY_STEP_BY_STEP.md`, `BUILD_APK.md`.
+- `docs/` — `DEPLOYMENT.md`, `DEPLOY_CLOUD.md`, `DEPLOY_STEP_BY_STEP.md`, `DEPLOY_TUNNEL.md`, `BUILD_APK.md`.
+- `scripts/tunnel.sh` — one-command local stack + Cloudflare quick tunnel (Variant A).
 
 ## Build and test commands
 
