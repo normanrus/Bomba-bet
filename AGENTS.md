@@ -78,6 +78,16 @@ Full stack:
   (`backend/Dockerfile`), so it runs on any Docker host. Do **not** try to deploy
   the backend to Vercel — it is a long-lived server with a `pg.Pool`, not a
   serverless function. The admin SPA does belong on Vercel.
+- The same reason rules out **Cloudflare Workers**: Workers handle one request per
+  invocation and expose `fetch`, while this backend needs a listening socket
+  (`app.listen`), a persistent `pg.Pool`, `fs` reads of `migrations/*.sql`, and a
+  boot-time entrypoint. `wrangler deploy` with no config also assumes a static
+  site and fails with "Could not detect a directory containing static files".
+  Cloudflare Containers would work but are paid-only.
+- Local run with a public URL (Variant A): `bash scripts/tunnel.sh` builds the
+  compose stack and opens a free cloudflared quick tunnel to the admin container,
+  whose nginx proxies `/api/` — so one URL covers panel and API and is what the
+  APK bakes in. See `docs/DEPLOY_TUNNEL.md`.
 - `backend/.dockerignore` excludes `.env`; keep it that way so a remote image
   build never receives the real `JWT_SECRET` or DB password in its build context.
 - Any host that sets `NODE_ENV=production` makes `npm ci` skip devDependencies,
